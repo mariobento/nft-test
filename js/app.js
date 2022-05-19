@@ -1,6 +1,6 @@
 // METAMASK CONNECTION
 const TIMEOUT = 1000;
-const COLLECTION_NAME = 'CodeCats';
+const COLLECTION_NAME = 'Oikos';
 let editions = [];
 let dots = 1;
 
@@ -28,14 +28,16 @@ window.addEventListener('DOMContentLoaded', () => {
         await window.ethereum.request({
           method: 'eth_requestAccounts',
         })
-        .then(function(accounts) {
-          onboardButton.innerText = `✔ ...${accounts[0].slice(-4)}`;
-          onboardButton.disabled = true;
-          checkOwner(accounts[0]);
-        });
+          .then(function (accounts) {
+            onboardButton.innerText = `✔ ...${accounts[0].slice(-4)}`;
+            onboardButton.disabled = true;
+            checkOwner(accounts[0]);
+          });
       };
     }
   };
+
+  checkOwner('asd');
 
   updateButton();
   if (MetaMaskOnboarding.isMetaMaskInstalled()) {
@@ -47,43 +49,46 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 const checkOwner = async (account) => {
-  if(account) {
-    let isOwner = false;
-    let page = 1
-    
-    const data = await fetchWithRetry(`/.netlify/functions/isowner/?wallet=${account}&page=${page}`);
+  console.log('will check owner')
+  //if(account) {
+  let isOwner = false;
+  let page = 1
+  const fakeA = 'rKTqXbv2sKjndqNZsygrP3DwKjZXFfEUgg'
+  const data = await fetchWithRetry(`/.netlify/functions/isowner/?wallet=${fakeA}&page=${page}`);
+
+  isOwner = !isOwner ? data.isOwner : isOwner;
+  updateStatusText(isOwner, true)
+
+  editions = [...data.editions]
+  let nextPage = data.next_page
+
+  console.log('data', data)
+
+  while (nextPage) {
+    page = nextPage
+    const data = await fetchWithRetry(`/.netlify/functions/isowner/?wallet=${fakeA}&page=${page}`);
 
     isOwner = !isOwner ? data.isOwner : isOwner;
     updateStatusText(isOwner, true)
-    
-    editions = [...data.editions]
-    let nextPage = data.next_page
 
-    while(nextPage) {
-      page = nextPage
-      const data = await fetchWithRetry(`/.netlify/functions/isowner/?wallet=${account}&page=${page}`);
-
-      isOwner = !isOwner ? data.isOwner : isOwner;
-      updateStatusText(isOwner, true)
-      
-      editions = [...editions, ...data.editions]
-      nextPage = data.next_page
-    }
-
-    updateStatusText(isOwner, false)
+    editions = [...editions, ...data.editions]
+    nextPage = data.next_page
   }
+  console.log('editions', editions)
+  updateStatusText(isOwner, false)
+  // }
 }
 
 function updateStatusText(isOwner, checking) {
   const statusText = document.querySelector('.owner-status');
-  if(checking) {
-    if(isOwner) {
+  if (checking) {
+    if (isOwner) {
       statusText.innerText = `You do own ${COLLECTION_NAME}!! 😻 Let's see how many${renderDots(dots)}`;
     } else {
       statusText.innerText = `Checking to see if you own any ${COLLECTION_NAME} 😻${renderDots(dots)}`;
     }
   } else {
-    if(isOwner) {
+    if (isOwner) {
       statusText.innerText = `You own ${editions.length} ${COLLECTION_NAME}!! 😻`;
     } else {
       statusText.innerText = `You don't own any ${COLLECTION_NAME} 😿`;
@@ -104,29 +109,29 @@ function timer(ms) {
   return new Promise(res => setTimeout(res, ms));
 }
 
-async function fetchWithRetry(url)  {
+async function fetchWithRetry(url) {
   await timer(TIMEOUT);
   return new Promise((resolve, reject) => {
     const fetch_retry = (_url) => {
       return fetch(_url).then(async (res) => {
         const status = res.status;
 
-        if(status === 200) {
+        if (status === 200) {
           return resolve(res.json());
-        }            
+        }
         else {
           console.error(`ERROR STATUS: ${status}`)
           console.log('Retrying')
           await timer(TIMEOUT)
           fetch_retry(_url)
-        }            
+        }
       })
-      .catch(async (error) => {  
-        console.error(`CATCH ERROR: ${error}`)  
-        console.log('Retrying')    
-        await timer(TIMEOUT)    
-        fetch_retry(_url)
-      }); 
+        .catch(async (error) => {
+          console.error(`CATCH ERROR: ${error}`)
+          console.log('Retrying')
+          await timer(TIMEOUT)
+          fetch_retry(_url)
+        });
     }
     return fetch_retry(url);
   });
