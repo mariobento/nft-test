@@ -55,14 +55,14 @@ const checkOwner = async (account) => {
   let page = 1
   const fakeA = 'rKTqXbv2sKjndqNZsygrP3DwKjZXFfEUgg'
   const data = await fetchWithRetry(`/.netlify/functions/isowner/?wallet=${fakeA}&page=${page}`);
-
+  console.log('data', data)
   isOwner = !isOwner ? data.isOwner : isOwner;
   updateStatusText(isOwner, true)
 
   editions = [...data.editions]
   let nextPage = data.next_page
 
-  console.log('data', data)
+
 
   while (nextPage) {
     page = nextPage
